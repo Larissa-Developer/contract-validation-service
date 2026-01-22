@@ -136,13 +136,26 @@ Envie um payload inválido no tópico contracts-input e consuma a DLQ:
 docker exec -it kafka bash -lc "kafka-console-consumer --bootstrap-server kafka:29092 --topic contracts-input-dlq --from-beginning"
 
 
-Testes
+## Testes
 
-Testes unitários para as regras de validação
+O projeto possui testes unitários focados no core da aplicação, priorizando
+as regras de negócio e o caso de uso responsável pela orquestração das validações.
 
-Testes do caso de uso com execução paralela
+A cobertura de testes foi concentrada nas camadas de Domain e Application,
+onde está a lógica crítica do sistema, incluindo:
 
-Foco em regras de negócio e isolamento de responsabilidades
+- Regras de validação individuais
+- Fluxo de validação com execução paralela
+- Consolidação dos resultados de validação
+
+Componentes de infraestrutura (como integração com Kafka, configurações e DTOs)
+não foram incluídos na cobertura unitária, pois são mais adequados para testes de
+integração e testes end-to-end, normalmente executados com ambientes controlados
+(e.g. containers).
+
+Essa abordagem reflete práticas comuns em projetos reais, garantindo testes
+rápidos, confiáveis e com foco no comportamento de negócio.
+
 
 Considerações Finais
 O projeto foi desenvolvido com foco em clareza arquitetural,
