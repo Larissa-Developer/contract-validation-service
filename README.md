@@ -77,7 +77,7 @@ Essa abordagem facilita testes, manutenção e evolução do sistema.
 
 ---
 
-## ▶ Como Executar o Projeto
+## Como Executar o Projeto
 
 ### Pré-requisitos
 
