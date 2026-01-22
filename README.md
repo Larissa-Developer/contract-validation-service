@@ -58,7 +58,7 @@ Essa abordagem facilita testes, manutenção e evolução do sistema.
 
 ---
 
-## ⚙ Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 - Java 17
 - Spring Boot
