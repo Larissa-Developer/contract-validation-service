@@ -22,7 +22,7 @@ public class IncomeValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Attributes not informed",
+                    "Atributos não informados",
                     System.currentTimeMillis() - start
             );
         }
@@ -33,7 +33,7 @@ public class IncomeValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Annual income not informed",
+                    "Renda anual não informada",
                     System.currentTimeMillis() - start
             );
         }
@@ -47,7 +47,7 @@ public class IncomeValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Invalid annual income value",
+                    "Valor de renda anual inválido",
                     System.currentTimeMillis() - start
             );
         }
@@ -56,7 +56,7 @@ public class IncomeValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Annual income below minimum required: " + MIN_INCOME,
+                    "Renda anual abaixo do mínimo exigido: " + MIN_INCOME,
                     System.currentTimeMillis() - start
             );
         }

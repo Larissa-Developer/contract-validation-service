@@ -24,7 +24,7 @@ public class RiskTierValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Risk tier not informed",
+                    "Nível de risco não informado",
                     System.currentTimeMillis() - start
             );
         }
@@ -35,7 +35,7 @@ public class RiskTierValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Invalid risk tier: " + riskTier,
+                    "Nível de risco inválido: " + riskTier,
                     System.currentTimeMillis() - start
             );
         }

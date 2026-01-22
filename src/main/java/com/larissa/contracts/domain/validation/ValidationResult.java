@@ -27,7 +27,7 @@ public class ValidationResult {
                 contractId,
                 ruleName,
                 true,
-                "Validation passed",
+                "Validação concluída",
                 durationMs
         );
     }

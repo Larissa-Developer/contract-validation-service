@@ -36,7 +36,7 @@ public class CollateralValidationRule implements ValidationRule {
         return ValidationResult.failed(
                 contract.getContractId(),
                 RULE_NAME,
-                "Collateral is required for contracts above 1,000,000",
+                "A garantia é necessária para contratos acima de 1.000.000",
                 System.currentTimeMillis() - start
         );
     }

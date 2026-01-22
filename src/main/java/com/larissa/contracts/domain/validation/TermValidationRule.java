@@ -17,7 +17,7 @@ public class TermValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Term not informed",
+                    "prazo não informado",
                     System.currentTimeMillis() - start
             );
         }
@@ -26,7 +26,7 @@ public class TermValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Term must be greater than zero",
+                    "O prazo precisa ser maior que zero",
                     System.currentTimeMillis() - start
             );
         }
@@ -35,7 +35,7 @@ public class TermValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Term exceeds maximum allowed",
+                    "O prazo excede o máximo permitido",
                     System.currentTimeMillis() - start
             );
         }

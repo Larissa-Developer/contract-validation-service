@@ -19,7 +19,7 @@ public class StartDateValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Start date is required",
+                    "A data de início é obrigatória",
                     System.currentTimeMillis() - start
             );
         }
@@ -28,7 +28,7 @@ public class StartDateValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Start date cannot be in the past",
+                    "A data de início não pode estar no passado",
                     System.currentTimeMillis() - start
             );
         }

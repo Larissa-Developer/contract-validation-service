@@ -23,7 +23,7 @@ public class AgeValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Customer age not informed",
+                    "Idade do cliente não informada",
                     System.currentTimeMillis() - start
             );
         }
@@ -34,7 +34,7 @@ public class AgeValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Customer age out of allowed range",
+                    "Idade do cliente fora da faixa permitida",
                     System.currentTimeMillis() - start
             );
         }

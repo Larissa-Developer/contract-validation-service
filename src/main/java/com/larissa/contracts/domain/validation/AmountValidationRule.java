@@ -19,7 +19,7 @@ public class AmountValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Contract amount not informed",
+                    "Valor do contrato não informado",
                     System.currentTimeMillis() - start
             );
         }
@@ -28,7 +28,7 @@ public class AmountValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Contract amount must be greater than zero",
+                    "O valor do contrato deve ser maior que zero",
                     System.currentTimeMillis() - start
             );
         }

@@ -22,7 +22,7 @@ public class CurrencyValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Currency not informed",
+                    "Moeda não informada",
                     System.currentTimeMillis() - start
             );
         }
@@ -31,7 +31,7 @@ public class CurrencyValidationRule implements ValidationRule {
             return ValidationResult.failed(
                     contract.getContractId(),
                     RULE_NAME,
-                    "Currency not supported",
+                    "Moeda não suportada",
                     System.currentTimeMillis() - start
             );
         }
