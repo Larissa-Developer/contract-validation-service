@@ -9,6 +9,7 @@ services:
       ZOOKEEPER_TICK_TIME: 2000
     ports:
       - "2181:2181"
+    restart: unless-stopped
 
   kafka:
     image: confluentinc/cp-kafka:7.6.1
@@ -30,6 +31,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+    restart: unless-stopped
+
   postgres:
     image: postgres:16
     container_name: postgres
@@ -39,6 +42,6 @@ services:
       POSTGRES_PASSWORD: contracts
     ports:
       - "5432:5432"
-
-
-
+    volumes:
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d
+    restart: unless-stopped

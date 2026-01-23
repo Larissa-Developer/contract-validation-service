@@ -1,184 +1,202 @@
-# Contract Validation Service (Kafka + Parallel Validation + DLQ)
+# Contract Validation Service
+**Kafka · Parallel Validation · Persistence · DLQ · Observability**
 
-Serviço Java/Spring Boot para validação de contratos financeiros em alto volume com:
-- Consumo de contratos via **Apache Kafka**
-- Execução de **validações independentes em paralelo** (CompletableFuture)
-- **Consolidação** do resultado (ALL_PASSED / SOME_FAILED)
-- Publicação em tópico Kafka de saída
-- Tratamento de mensagens inválidas via **DLQ**
-- **Observabilidade** com Actuator/Micrometer (health, metrics, prometheus)
-- **Testes** unitários e cobertura com JaCoCo (foco no core: Domain/Application)
+Serviço Java/Spring Boot para validação **assíncrona e paralela** de contratos financeiros em alto volume, utilizando **Apache Kafka**, **arquitetura hexagonal** e **processamento resiliente**.
+
+---
+
+##  Objetivo
+
+Processar contratos financeiros de forma eficiente e escalável, aplicando **múltiplas regras de validação em paralelo**, persistindo os resultados e publicando o status consolidado para consumo por outros sistemas.
 
 ---
 
 ##  Visão geral do fluxo
 
-1. **Consumer** lê mensagens do tópico `contracts-input`
-2. Payload JSON é validado/parseado para objeto de domínio
-3. Regras de validação rodam **em paralelo**
-4. Resultado consolidado é gerado com:
-    - `timestamp`
-    - `overallStatus` (`ALL_PASSED` / `SOME_FAILED`)
-    - lista de resultados por regra (`ruleName`, `passed`, `message`, `durationMs`)
-5. Resultado é publicado em `contracts-validation-results`
-6. Mensagens inválidas ou que falhem no processamento são enviadas para `contracts-input-dlq`
+Kafka (contracts-input)
+
+ContractKafkaListener
+
+ValidateContractUseCase
+
+Validações paralelas (CompletableFuture)
+
+Persistência (PostgreSQL - batch)
+
+Kafka (contracts-validation-results)
+
+Erros → Kafka DLQ (contracts-input-dlq)
+
+
+### Passo a passo
+
+1. **Consumer Kafka** consome mensagens do tópico `contracts-input`
+2. Payload JSON é desserializado para objeto de domínio `Contract`
+3. Regras de validação são executadas **em paralelo**
+4. Resultados são consolidados (`ALL_PASSED` ou `SOME_FAILED`)
+5. Resultados individuais são **persistidos em batch** no PostgreSQL
+6. Resultado consolidado é publicado em `contracts-validation-results`
+7. Mensagens inválidas ou falhas irrecuperáveis vão para `contracts-input-dlq`
 
 ---
 
-##  Arquitetura (Hexagonal simplificada)
+##  Arquitetura
 
-Estrutura em camadas com separação de responsabilidades:
+Arquitetura **Hexagonal simplificada (Ports & Adapters)**.
 
-- **Domain**
-    - Modelos de domínio (ex.: `Contract`, `ValidationResult`)
-    - Regras de validação (`ValidationRule`)
-    - Portas (interfaces) para integrações (ex.: mensageria, persistência)
-- **Application**
-    - Casos de uso (ex.: `ValidateContractUseCase`)
-    - Orquestração das validações paralelas e consolidação
-- **Infrastructure**
-    - Adapters Kafka (consumer/producer)
-    - Configurações Spring/Kafka
-    - (Persistência e repositórios quando aplicável)
+### Domain
+- Entidades: `Contract`, `ValidationResult`
+- Interface de regra: `ValidationRule`
+- Modelos de domínio independentes de infraestrutura
 
-> Objetivo: manter regras de negócio no **Domain/Application** e deixar integrações em **Infrastructure**.
+### Application
+- `ValidateContractUseCase`
+- Orquestração das validações paralelas
+- Consolidação do resultado final
+
+### Infrastructure
+- Kafka Consumer / Producer
+- Persistência PostgreSQL
+- Configurações Spring, Kafka e Observabilidade
+
+> As regras de negócio não dependem de Kafka, banco ou Spring.
 
 ---
 
 ##  Regras de validação implementadas
 
-As validações são independentes e executadas em paralelo:
+Executadas **em paralelo** e de forma independente:
 
-1. **AmountValidationRule**  
-   Valor entre **R$ 1.000* e *R$ 5.000.000**
-2. **CurrencyValidationRule**  
-   Moedas suportadas: **BRL, USD, EUR**
-3. **TermValidationRule**  
-   Prazo entre **12 e 360 meses**
-4. **StartDateValidationRule**  
-   Data de início **não pode estar no passado**
-5. **AgeValidationRule**  
-   Idade entre **18 e 75**
-6. **RiskTierValidationRule**  
-   Tier válido: **A, B, C, D**
-7. **CollateralValidationRule**  
-   Garantia obrigatória se `amount > 1.000.000`
-8. **IncomeValidationRule**  
-   Renda anual mínima conforme o produto (ex.: `annualIncome` em `attributes`)
+1. Valor entre **1.000 e 5.000.000**
+2. Moeda suportada: **BRL, USD, EUR**
+3. Prazo entre **12 e 360 meses**
+4. Data de início não pode estar no passado
+5. Idade do cliente entre **18 e 75**
+6. Tier de risco válido: **A, B, C, D**
+7. Garantia obrigatória para valores > **1.000.000**
+8. Renda anual mínima conforme o produto
 
-Cada regra retorna um `ValidationResult` contendo:
+Cada regra retorna:
 - `contractId`
 - `ruleName`
 - `passed`
 - `message`
 - `durationMs`
+- `createdAt`
 
 ---
 
-##  Testes e cobertura
+##  Persistência
 
-O foco dos testes está na **lógica de negócio** (Domain e Application):
-- Testes unitários para regras de validação
-- Testes do caso de uso com execução paralela
-- Relatório de cobertura com **JaCoCo**
+- Banco: **PostgreSQL**
+- Tabela: `contract_validation_results`
+- Inserções realizadas em **batch**
+- Persistência ocorre antes da publicação no Kafka
+- Script SQL executado automaticamente via Docker
 
-### Rodar testes
-```bash
-mvn test
-Gerar relatório de cobertura (JaCoCo)
-mvn clean test jacoco:report
+```sql
+CREATE TABLE contract_validation_results (
+  id BIGSERIAL PRIMARY KEY,
+  contract_id VARCHAR(64) NOT NULL,
+  rule_name VARCHAR(80) NOT NULL,
+  passed BOOLEAN NOT NULL,
+  message TEXT,
+  duration_ms BIGINT NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  correlation_id VARCHAR(64)
+);
 
 
-- O relatório HTML fica em:
-target/site/jacoco/index.html
+Resiliência e DLQ
+Retry automático para falhas transitórias
 
-Observação: classes puramente de infraestrutura (configuracao/adapters) podem ter cobertura menor por dependerem de ambiente externo.
+Após exceder tentativas -> mensagem enviada para DLQ
 
-- Observabilidade (Actuator + Micrometer)
+Tópico DLQ: contracts-input-dlq
 
-Endpoints (padrao localhost:8080):
 
-Health:
+Utilizado para:
 
+JSON inválido
+
+Payload incompleto
+
+Erros de parsing
+
+
+Observabilidade:
+Actuator
 GET /actuator/health
-
-Probes:
 
 GET /actuator/health/liveness
 
 GET /actuator/health/readiness
 
-Metrics:
-
+Métricas:
 GET /actuator/metrics
-
-Prometheus:
 
 GET /actuator/prometheus
 
-- Subir infraestrutura com Docker (Kafka + PostgreSQL)
-- Subir os containers
+Logs estruturados incluem:
 
-Na raiz do projeto (onde esta docker-compose.yml):
+contractId
 
+correlationId
+
+Status do processamento
+
+
+Testes:
+
+Testes unitários com JUnit 5 + Mockito
+
+Foco em Domain e Application
+
+Cobertura com JaCoCo
+
+---
+
+mvn test
+mvn clean test jacoco:report
+Relatório:
+
+target/site/jacoco/index.html
+
+-Infraestrutura com Docker
+Subir serviços
 docker compose up -d
 docker ps
 
+Serviços:
 
-- Verifique se kafka e postgres estão com status Up.
+Kafka
 
-- Kafka - Criar tópicos
-- Criar os tópicos (uma vez)
+Zookeeper
+
+PostgreSQL
+
+Kafka - Criação dos tópicos
 docker exec -it kafka bash -lc "kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic contracts-input --partitions 3 --replication-factor 1"
 
 docker exec -it kafka bash -lc "kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic contracts-validation-results --partitions 3 --replication-factor 1"
 
 docker exec -it kafka bash -lc "kafka-topics --bootstrap-server kafka:29092 --create --if-not-exists --topic contracts-input-dlq --partitions 3 --replication-factor 1"
 
-(Opcional) Listar tópicos
-docker exec -it kafka bash -lc "kafka-topics --bootstrap-server kafka:29092 --list"
-
-- Rodar a aplicação
-- Subir o serviço
+Executar a aplicação
 mvn spring-boot:run
-
-
-A aplicação ficará aguardando mensagens no tópico contracts-input.
-
-- Enviar contrato para validação (producer)
-- Abrir producer no tópico de entrada
+Enviar contrato (Producer)
 docker exec -it kafka bash -lc "kafka-console-producer --bootstrap-server kafka:29092 --topic contracts-input"
+Exemplo:
 
-Enviar payload válido (cole em uma linha e pressione Enter)
 {"contractId":"CNT-2026-0001","clientId":"CL-12345","productType":"CREDIT","amount":250000.00,"currency":"BRL","termMonths":60,"startDate":"2026-02-15","customerAge":35,"clientRiskTier":"A","collateralProvided":true,"attributes":{"annualIncome":90000}}
 
-- Consumir resultados (consumer)
-- Ler o tópico de resultados
+Consumir resultado
 docker exec -it kafka bash -lc "kafka-console-consumer --bootstrap-server kafka:29092 --topic contracts-validation-results --from-beginning"
 
-
-- Você deve ver um JSON contendo:
-
-contractId
-
-timestamp
-
-overallStatus (ALL_PASSED ou SOME_FAILED)
-
-lista results[]
-
--Testar Dead Letter Queue (DLQ)
-
-A DLQ recebe mensagens inválidas (ex.: JSON quebrado, campos obrigatorios faltando, erro de parsing).
-
--Abrir consumer da DLQ
-docker exec -it kafka bash -lc "kafka-console-consumer --bootstrap-server kafka:29092 --topic contracts-input-dlq --from-beginning"
-
-Enviar payload inválido (no producer do topico contracts-input)
-
-Cole e pressione Enter:
+Testar DLQ
+Producer:
 
 {"contractId":
+Consumer DLQ:
 
-
--A mensagem inválida deve aparecer no consumer da DLQ.
+docker exec -it kafka bash -lc "kafka-console-consumer --bootstrap-server kafka:29092 --topic contracts-input-dlq --from-beginning"
